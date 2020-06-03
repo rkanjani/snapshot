@@ -1,76 +1,82 @@
-const sd = require('@wildpeaks/snapshot-dom')
-const beautify = require('js-beautify').html
+const sd = require("@wildpeaks/snapshot-dom");
+const beautify = require("js-beautify").html;
 
 // converts DOM element to a JSON object
-function serializeDomElement ($el) {
-  let serialized = []
+function serializeDomElement($el) {
+  let serialized = [];
 
-  $el.each(function (index, element) {
+  $el.each(function(index, element) {
     // console.log('snapshot value!', $el)
-    const json = sd.toJSON(element)
+    const json = sd.toJSON(element);
     // console.log('as json', json)
 
     // hmm, why is value not serialized?
     if ($el.context.value && !json.attributes.value) {
-      json.attributes.value = $el.context.value
+      json.attributes.value = $el.context.value;
     }
 
-    serialized.push(deleteReactIdFromJson(json))
-  })
+    serialized.push(deleteReactIdFromJson(json));
+  });
 
   if (serialized.length === 1) {
-    return serialized[0]
+    return serialized[0];
   } else {
-    return serialized
+    return serialized;
   }
 }
 
 // remove React id, too transient
-function deleteReactIdFromJson (json) {
+function deleteReactIdFromJson(json) {
   if (json.attributes) {
-    delete json.attributes['data-reactid']
+    delete json.attributes["data-reactid"];
   }
 
   if (Array.isArray(json.childNodes)) {
-    json.childNodes.forEach(deleteReactIdFromJson)
+    json.childNodes.forEach(deleteReactIdFromJson);
   }
-  return json
+  return json;
 }
 
-const stripReactIdAttributes = (html) => {
-  const dataReactId = /data\-reactid="[\.\d\$\-abcdfef]+"/g
-  return html.replace(dataReactId, '')
-}
+const stripReactIdAttributes = html => {
+  const dataReactId = /data\-reactid="[\.\d\$\-abcdfef]+"/g;
+  return html.replace(dataReactId, "");
+};
 
-const serializeReactToHTML = ($el) => {
-  let html = ''
+const stripReactGlassjarUrlPort = html => {
+  const dataGlassjarPort = /\/\/local\.teams\.office\.com:[\d]+/g;
+  return html.replace(dataGlassjarPort, "//local.teams.office.com");
+};
 
-  $el.each(function (index, element) {
-    html += element.outerHTML
-  })
+const serializeReactToHTML = $el => {
+  let html = "";
 
-  const stripped = stripReactIdAttributes(html)
+  $el.each(function(index, element) {
+    html += element.outerHTML;
+  });
+
+  const portStripped = stripReactGlassjarUrlPort(html);
+  const stripped = stripReactIdAttributes(portStripped);
   const options = {
     wrap_line_length: 80,
     indent_inner_html: true,
     indent_size: 2,
-    wrap_attributes: 'force'
-  }
-  const pretty = beautify(stripped, options)
-  return pretty
-}
+    wrap_attributes: "force"
+  };
+  const pretty = beautify(stripped, options);
+  return pretty;
+};
 
-const identity = (x) => x
+const identity = x => x;
 
-const publicProps = (name) => !name.startsWith('__')
+const publicProps = name => !name.startsWith("__");
 
-const countSnapshots = (snapshots) =>
-  Object.keys(snapshots).filter(publicProps).length
+const countSnapshots = snapshots =>
+  Object.keys(snapshots).filter(publicProps).length;
 
 module.exports = {
-  SNAPSHOT_FILE_NAME: 'snapshots.js',
+  SNAPSHOT_FILE_NAME: "snapshots.js",
   serializeDomElement,
   serializeReactToHTML,
   identity,
   countSnapshots
-}
+};
